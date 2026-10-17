@@ -24,8 +24,6 @@ mgc = "music_genre_classifier.__main__:main"
 [tool.basedpyright]
 include = ["src"]
 pythonVersion = "3.12"
-venvPath = "."
-venv = ".venv"
 typeCheckingMode = "standard"
 
 [tool.ruff]

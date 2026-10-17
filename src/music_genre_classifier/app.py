@@ -1,5 +1,5 @@
 """
-This module defines the entry point to the CMPUT 466 mini-project.
+This module trains and evaluates the genre classifiers on the extracted feature table.
 """
 
 import csv
@@ -20,7 +20,6 @@ from . import settings
 from .features import FeatureTable
 
 
-# Little bit of a rush job, but in a tad bit of a hurry anyway.
 def build_model(hp):
     model = models.Sequential()
     model.add(

@@ -11,7 +11,6 @@ import librosa as lr
 import numpy as np
 from scipy import stats
 
-from . import math_utils as mu
 from .generic import FeatureSet
 
 
@@ -72,7 +71,7 @@ class FeatureTable(object):
 
                 tempo_dynamic = lr.feature.tempo(y=y, sr=sr, aggregate=None, std_bpm=4)
 
-                # A simpler version of what is talked about in our paper
+                # Rhythm features from the beat-tracked onset times
                 _, beats_dynamic = lr.beat.beat_track(
                     y=y, sr=sr, units="time", trim=False, bpm=tempo_dynamic
                 )
