@@ -1,6 +1,5 @@
 """
-Process entry point. Basically forwards everything to main. Only discoverable part of the
-application from the perspective of a program user.
+This file defines the entry point to the application.
 """
 
 from app import App
