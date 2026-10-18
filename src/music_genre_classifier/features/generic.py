@@ -5,7 +5,7 @@ Generic Feature module. Allows declaring custom FeatureSet types with a simple w
 import typing as ty
 
 
-class FeatureSet(object):
+class FeatureSet:
     """
     Generic FeatureSetet class. Represents a row in a table of FeatureSet.
     """
@@ -25,15 +25,21 @@ class FeatureSet(object):
             setattr(self, k, v)
 
         if self.label is not None:
-            raise NameError(
-                "attrib 'label' is a protected attribute for a Feature class"
-            )
+            raise NameError("attrib 'label' is a protected attribute for a Feature class")
         else:
             self.label = label
 
         pass
 
-    def to_list(self) -> ty.List[ty.Any]:
+    def __getattr__(self, name: str) -> ty.Any:
+        """
+        Only reached for attributes not set by the constructor. Declares to type checkers
+        that feature attributes are dynamic.
+        """
+
+        raise AttributeError(name)
+
+    def to_list(self) -> list[ty.Any]:
         """
         Converts the labeled feature set into a simple-row representation. Useful for
         working with training data.

@@ -1,32 +1,28 @@
 """
-This module defines the entry point to the CMPUT 466 mini-project.
+This module trains and evaluates the genre classifiers on the extracted feature table.
 """
 
 import csv
 import typing as ty
-from pathlib import Path
 
 import keras_tuner as kt
 import numpy as np
 from keras import layers, metrics, models, optimizers, utils
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (accuracy_score, classification_report,
-                             confusion_matrix)
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
 from . import settings
 from .features import FeatureTable
+from .settings import Settings
 
 
-# Little bit of a rush job, but in a tad bit of a hurry anyway.
 def build_model(hp):
     model = models.Sequential()
     model.add(
-        layers.Dense(
-            hp.Choice("units", [8, 16, 24]), activation="sigmoid", use_bias=True
-        )
+        layers.Dense(hp.Choice("units", [8, 16, 24]), activation="sigmoid", use_bias=True)
     )
     model.add(layers.Dense(len(settings.GENRES), activation="sigmoid", use_bias=True))
 
@@ -39,22 +35,30 @@ def build_model(hp):
     return model
 
 
-class App(object):
+class App:
     """
     Class wrapper for the application. Seperates initialization, state, and other logical
     features from the entry point.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, settings: Settings) -> None:
         """
-        Initializes the application structure, allowing imports of public assets via name.
+        Initializes the application structure from the command line settings.
         """
 
         self.error = False
         self.error_encountered = None
-        self.context = {}
+        self.settings = settings
 
         pass
+
+    @classmethod
+    def from_settings(cls) -> "App":
+        """
+        Creates the application from the settings given on the command line.
+        """
+
+        return cls(Settings.from_args())
 
     def run(self) -> bool:
         """
@@ -128,7 +132,9 @@ class App(object):
         for mssp_hp in range(2, 41):
             for msl_hp in range(2, 24):
                 val_model = DecisionTreeClassifier(
-                    min_samples_split=mssp_hp, min_samples_leaf=msl_hp
+                    min_samples_split=mssp_hp,
+                    min_samples_leaf=msl_hp,
+                    random_state=self.settings.seed,
                 )
                 val_model.fit(X_train, Y_train)
                 prediction = val_model.predict(X_val)
@@ -164,10 +170,14 @@ class App(object):
         Y_val = utils.to_categorical(Y_val, len(settings.GENRES))
         Y_test = utils.to_categorical(Y_test, len(settings.GENRES))
 
+        if self.settings.seed is not None:
+            utils.set_random_seed(self.settings.seed)
+
         tuner = kt.RandomSearch(
             build_model,
             objective="val_accuracy",
             max_trials=5,
+            seed=self.settings.seed,
         )
 
         tuner.search(X_train, Y_train, epochs=500, validation_data=(X_val, Y_val))
@@ -188,47 +198,45 @@ class App(object):
         Prep the application as an initial update step to ensure efficient running.
         """
 
-        asset_root = Path.cwd() / Path(settings.ROOT) / Path(settings.ASSET_ROOT)
-        self.context["asset-root"] = asset_root
-
-        if settings.EXTRACT_FEATURES:
-            # Convert the audio files in the extract asset root into a table of features
-            table = FeatureTable.extract(asset_root, settings.GENRES)
+        if self.settings.extract:
+            # Convert the audio clips into a table of features
+            table = FeatureTable.extract(self.settings.clips, settings.GENRES)
             if table is None:
-                self.error = (
+                self.error_encountered = (
                     "Failed to extract features into table. See log for details."
                 )
-                self.error_encountered = True
+                self.error = True
+                return
 
-            # Serialize the features to a set of csv's (to increase speed on second-training attempts)
-            table.serialize(to=asset_root, classes=settings.GENRES)
+            # Serialize the features to a set of csv's (speeds up later training runs)
+            table.serialize(to=self.settings.features, classes=settings.GENRES)
 
-    def _split_features(self) -> ty.Optional[ty.Union[ty.Union[ty.Iterable]]]:
+    def _split_features(self) -> ty.Iterable | None:
         """
         Splits features into testing, validation, and training sets. Feature selection is
         randomized and augmented as necessary during this process.
         """
 
-        asset_root = self.context["asset-root"]
-        if not asset_root:
-            self.error_encountered = "Failed to initialize asset root"
+        if not self.settings.features.is_dir():
+            self.error_encountered = (
+                f"Feature directory {self.settings.features} not found. "
+                "Run with --extract"
+            )
             self.error = True
             return None
 
         # Convert all features (in seperate files) into one big dataset
         dataset = []
         for genre in settings.GENRES:
-            with open(asset_root / "features" / f"{genre}.csv", "r") as file:
+            with open(self.settings.features / f"{genre}.csv") as file:
                 reader = csv.reader(file)
-                table = [[np.float64(value) for value in row] for row in reader]
-                for row in table:
-                    row[0] = int(row[0])
-                    dataset.append(row)
+                for row in reader:
+                    dataset.append(
+                        [int(row[0]), *(np.float64(value) for value in row[1:])]
+                    )
 
         if len(dataset) <= 0:
-            self.error_encountered = (
-                "Dataset is zero-width. Set EXTRACT_FEATURES in settings.py to True"
-            )
+            self.error_encountered = "Dataset is zero-width. Run with --extract"
             self.error = True
             return None
 
@@ -237,7 +245,7 @@ class App(object):
         labels = [row[0] for row in dataset]
         features = [row[1:] for row in dataset]
 
-        random_state = np.random.RandomState()
+        random_state = np.random.RandomState(self.settings.seed)
         scalar = StandardScaler()
 
         X_train, X_temp, Y_train, Y_temp = train_test_split(
@@ -256,6 +264,6 @@ class App(object):
 
         return ((X_train, Y_train), (X_val, Y_val), (X_test, Y_test))
 
-    error_encountered: ty.Union[str, None]
+    error_encountered: str | None
     error: bool
-    context: ty.Dict[str, ty.Any]
+    settings: Settings
