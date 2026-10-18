@@ -11,7 +11,10 @@ import librosa as lr
 import numpy as np
 from scipy import stats
 
+from ..logging import setup_logging
 from .generic import FeatureSet
+
+logger = setup_logging(__name__)
 
 
 class FeatureTable:
@@ -37,10 +40,10 @@ class FeatureTable:
 
         featureset_list: list[FeatureSet] = []
         for genre_class, genre in enumerate(genres):
-            print(f"Extracting features for {genre}")
+            logger.info("Extracting features for %s", genre)
             for snippet_idx in range(100):
                 if (snippet_idx % 10) == 0:
-                    print(f"{snippet_idx / 100}")
+                    logger.info("%s", snippet_idx / 100)
 
                 ## Create Path for Assets
 
@@ -56,7 +59,7 @@ class FeatureTable:
 
                 audio_path = Path(curr_pathname)
                 if not audio_path.exists():
-                    print(f"Failed to find path {curr_pathname}")
+                    logger.error("Failed to find path %s", curr_pathname)
                     return None
 
                 ## Extract Stationary Features
@@ -162,10 +165,10 @@ class FeatureTable:
         Serialize the feature sets to a 'features' table.
         """
 
-        print("Serializing features...")
+        logger.info("Serializing features...")
 
         if len(self._featureset_list) <= 0:
-            print("No features extracted from data source")
+            logger.error("No features extracted from data source")
             return False
 
         root = Path(to)

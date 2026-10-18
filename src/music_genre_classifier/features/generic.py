@@ -4,6 +4,10 @@ Generic Feature module. Allows declaring custom FeatureSet types with a simple w
 
 import typing as ty
 
+from ..logging import setup_logging
+
+logger = setup_logging(__name__)
+
 
 class FeatureSet:
     """
@@ -54,12 +58,10 @@ class FeatureSet:
 
     def pprint(self):
         """
-        Simply pretty prints the feature set.
+        Simply pretty prints the feature set to the log.
         """
 
-        print(f"Feature {self.label}: ")
-        for key, val in self.__dict__.items():
-            print(f"- {key}: {val}")
+        logger.info("Feature %s: \n%s", self.label, self)
 
     def __repr__(self) -> str:
         repr_str = ""
