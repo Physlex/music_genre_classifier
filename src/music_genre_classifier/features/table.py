@@ -193,4 +193,6 @@ class FeatureTable:
                 writer = csv.writer(file)
                 writer.writerow(featureset.to_list())
 
-    _featureset_list = list[FeatureSet]
+        return True
+
+    _featureset_list: list[FeatureSet]

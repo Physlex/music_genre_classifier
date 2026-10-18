@@ -1,7 +1,12 @@
 # Nix attribute set defining known libraries for the nix build system
 { inputs, ... }:
 let
-  inherit (inputs) pyproject-nix uv2nix pyproject-build-systems;
+  inherit (inputs)
+    pyproject-nix
+    uv2nix
+    pyproject-build-systems
+    git-hooks
+    ;
 in
 {
   # Python package set generated from uv.lock, shared by the package and devshell
@@ -44,5 +49,36 @@ in
     in
     {
       inherit workspace pythonSet;
+    };
+
+  # Git hooks for the devshell to install: checks on commit, formatting on push
+  mkGitHooks =
+    { pkgs, virtualenv }:
+    git-hooks.lib.${pkgs.stdenv.hostPlatform.system}.run {
+      src = ../..;
+      hooks = {
+        ruff = {
+          enable = true;
+          entry = "${pkgs.ruff}/bin/ruff check";
+        };
+
+        basedpyright = {
+          enable = true;
+          name = "basedpyright";
+          entry = "${pkgs.basedpyright}/bin/basedpyright --pythonpath ${virtualenv}/bin/python";
+          types = [ "python" ];
+          pass_filenames = false;
+        };
+
+        ruff-format = {
+          enable = true;
+          stages = [ "pre-push" ];
+        };
+
+        nixfmt = {
+          enable = true;
+          stages = [ "pre-push" ];
+        };
+      };
     };
 }

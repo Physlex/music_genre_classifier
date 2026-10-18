@@ -14,7 +14,7 @@ def main() -> None:
         continue
 
     if app.error_encountered:
-        print(f"Application encountered an unexpected error: {app.error}")
+        print(f"Application encountered an unexpected error: {app.error_encountered}")
 
 
 if __name__ == "__main__":

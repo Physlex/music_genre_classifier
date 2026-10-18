@@ -25,13 +25,19 @@ class FeatureSet:
             setattr(self, k, v)
 
         if self.label is not None:
-            raise NameError(
-                "attrib 'label' is a protected attribute for a Feature class"
-            )
+            raise NameError("attrib 'label' is a protected attribute for a Feature class")
         else:
             self.label = label
 
         pass
+
+    def __getattr__(self, name: str) -> ty.Any:
+        """
+        Only reached for attributes not set by the constructor. Declares to type checkers
+        that feature attributes are dynamic.
+        """
+
+        raise AttributeError(name)
 
     def to_list(self) -> list[ty.Any]:
         """

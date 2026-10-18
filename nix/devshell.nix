@@ -11,6 +11,8 @@ let
   editablePythonSet = pythonSet.overrideScope editableOverlay;
 
   virtualenv = editablePythonSet.mkVirtualEnv "music-genre-classifier-dev-env" workspace.deps.all;
+
+  gitHooks = flake.lib.mkGitHooks { inherit pkgs virtualenv; };
 in
 pkgs.mkShell {
   packages = [
@@ -37,5 +39,6 @@ pkgs.mkShell {
     unset PYTHONPATH
     # Directory editable packages are relative to
     export REPO_ROOT=$(git rev-parse --show-toplevel)
+    ${gitHooks.shellHook}
   '';
 }

@@ -21,9 +21,7 @@ from .features import FeatureTable
 def build_model(hp):
     model = models.Sequential()
     model.add(
-        layers.Dense(
-            hp.Choice("units", [8, 16, 24]), activation="sigmoid", use_bias=True
-        )
+        layers.Dense(hp.Choice("units", [8, 16, 24]), activation="sigmoid", use_bias=True)
     )
     model.add(layers.Dense(len(settings.GENRES), activation="sigmoid", use_bias=True))
 
@@ -192,12 +190,13 @@ class App:
             # Convert the audio files in the extract asset root into a table of features
             table = FeatureTable.extract(asset_root, settings.GENRES)
             if table is None:
-                self.error = (
+                self.error_encountered = (
                     "Failed to extract features into table. See log for details."
                 )
-                self.error_encountered = True
+                self.error = True
+                return
 
-            # Serialize the features to a set of csv's (to increase speed on second-training attempts)
+            # Serialize the features to a set of csv's (speeds up later training runs)
             table.serialize(to=asset_root, classes=settings.GENRES)
 
     def _split_features(self) -> ty.Iterable | None:
@@ -217,10 +216,10 @@ class App:
         for genre in settings.GENRES:
             with open(asset_root / "features" / f"{genre}.csv") as file:
                 reader = csv.reader(file)
-                table = [[np.float64(value) for value in row] for row in reader]
-                for row in table:
-                    row[0] = int(row[0])
-                    dataset.append(row)
+                for row in reader:
+                    dataset.append(
+                        [int(row[0]), *(np.float64(value) for value in row[1:])]
+                    )
 
         if len(dataset) <= 0:
             self.error_encountered = (

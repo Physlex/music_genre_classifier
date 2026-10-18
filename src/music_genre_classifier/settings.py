@@ -5,7 +5,7 @@ run the application.
 
 from pathlib import Path
 
-# Folder where static assets are held, next to this module. All datasets are taken from here.
+# Folder where static assets are held, next to this module. All datasets come from here.
 ASSET_ROOT = Path(__file__).parent / "public"
 
 # Forces the program to re-serialize the feature set. Set to 'False' if features have
