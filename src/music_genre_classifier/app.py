@@ -16,6 +16,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from . import settings
 from .features import FeatureTable
+from .settings import Settings
 
 
 def build_model(hp):
@@ -40,16 +41,24 @@ class App:
     features from the entry point.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, settings: Settings) -> None:
         """
-        Initializes the application structure, allowing imports of public assets via name.
+        Initializes the application structure from the command line settings.
         """
 
         self.error = False
         self.error_encountered = None
-        self.context = {}
+        self.settings = settings
 
         pass
+
+    @classmethod
+    def from_settings(cls) -> "App":
+        """
+        Creates the application from the settings given on the command line.
+        """
+
+        return cls(Settings.from_args())
 
     def run(self) -> bool:
         """
@@ -123,7 +132,9 @@ class App:
         for mssp_hp in range(2, 41):
             for msl_hp in range(2, 24):
                 val_model = DecisionTreeClassifier(
-                    min_samples_split=mssp_hp, min_samples_leaf=msl_hp
+                    min_samples_split=mssp_hp,
+                    min_samples_leaf=msl_hp,
+                    random_state=self.settings.seed,
                 )
                 val_model.fit(X_train, Y_train)
                 prediction = val_model.predict(X_val)
@@ -159,10 +170,14 @@ class App:
         Y_val = utils.to_categorical(Y_val, len(settings.GENRES))
         Y_test = utils.to_categorical(Y_test, len(settings.GENRES))
 
+        if self.settings.seed is not None:
+            utils.set_random_seed(self.settings.seed)
+
         tuner = kt.RandomSearch(
             build_model,
             objective="val_accuracy",
             max_trials=5,
+            seed=self.settings.seed,
         )
 
         tuner.search(X_train, Y_train, epochs=500, validation_data=(X_val, Y_val))
@@ -183,12 +198,9 @@ class App:
         Prep the application as an initial update step to ensure efficient running.
         """
 
-        asset_root = settings.ASSET_ROOT
-        self.context["asset-root"] = asset_root
-
-        if settings.EXTRACT_FEATURES:
-            # Convert the audio files in the extract asset root into a table of features
-            table = FeatureTable.extract(asset_root, settings.GENRES)
+        if self.settings.extract:
+            # Convert the audio clips into a table of features
+            table = FeatureTable.extract(self.settings.clips, settings.GENRES)
             if table is None:
                 self.error_encountered = (
                     "Failed to extract features into table. See log for details."
@@ -197,7 +209,7 @@ class App:
                 return
 
             # Serialize the features to a set of csv's (speeds up later training runs)
-            table.serialize(to=asset_root, classes=settings.GENRES)
+            table.serialize(to=self.settings.features, classes=settings.GENRES)
 
     def _split_features(self) -> ty.Iterable | None:
         """
@@ -205,16 +217,18 @@ class App:
         randomized and augmented as necessary during this process.
         """
 
-        asset_root = self.context["asset-root"]
-        if not asset_root:
-            self.error_encountered = "Failed to initialize asset root"
+        if not self.settings.features.is_dir():
+            self.error_encountered = (
+                f"Feature directory {self.settings.features} not found. "
+                "Run with --extract"
+            )
             self.error = True
             return None
 
         # Convert all features (in seperate files) into one big dataset
         dataset = []
         for genre in settings.GENRES:
-            with open(asset_root / "features" / f"{genre}.csv") as file:
+            with open(self.settings.features / f"{genre}.csv") as file:
                 reader = csv.reader(file)
                 for row in reader:
                     dataset.append(
@@ -222,9 +236,7 @@ class App:
                     )
 
         if len(dataset) <= 0:
-            self.error_encountered = (
-                "Dataset is zero-width. Set EXTRACT_FEATURES in settings.py to True"
-            )
+            self.error_encountered = "Dataset is zero-width. Run with --extract"
             self.error = True
             return None
 
@@ -233,7 +245,7 @@ class App:
         labels = [row[0] for row in dataset]
         features = [row[1:] for row in dataset]
 
-        random_state = np.random.RandomState()
+        random_state = np.random.RandomState(self.settings.seed)
         scalar = StandardScaler()
 
         X_train, X_temp, Y_train, Y_temp = train_test_split(
@@ -254,4 +266,4 @@ class App:
 
     error_encountered: str | None
     error: bool
-    context: dict[str, ty.Any]
+    settings: Settings

@@ -7,7 +7,7 @@ from .app import App
 
 
 def main() -> None:
-    app = App()
+    app = App.from_settings()
 
     app.init()
     while app.run():
