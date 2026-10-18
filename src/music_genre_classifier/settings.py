@@ -27,6 +27,12 @@ class Settings:
     # already serialized
     extract: bool
 
+    # Directory each run creates its own log instance in
+    logs: Path
+
+    # Streams the system and results logs to stdout, alongside their log files
+    stream: bool
+
     @staticmethod
     def from_args() -> "Settings":
         """
@@ -60,10 +66,28 @@ class Settings:
             action="store_true",
             help="extract the feature tables from the audio clips before training",
         )
+        parser.add_argument(
+            "--logs",
+            type=Path,
+            default=Path("logs"),
+            help="directory the log instance of each run is written to "
+            "(default: %(default)s)",
+        )
+        parser.add_argument(
+            "--stream",
+            action=argparse.BooleanOptionalAction,
+            default=True,
+            help="stream the system and results logs to stdout (default: %(default)s)",
+        )
         args = parser.parse_args()
 
         return Settings(
-            clips=args.clips, features=args.features, seed=args.seed, extract=args.extract
+            clips=args.clips,
+            features=args.features,
+            seed=args.seed,
+            extract=args.extract,
+            logs=args.logs,
+            stream=args.stream,
         )
 
 
