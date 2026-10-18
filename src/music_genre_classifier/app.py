@@ -9,13 +9,13 @@ import keras_tuner as kt
 import numpy as np
 from keras import layers, metrics, models, optimizers, utils
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
 from . import settings
 from .features import FeatureTable
+from .logging import EpochLogger, ResultsLogger
 from .settings import Settings
 
 
@@ -84,7 +84,9 @@ class App:
 
         # Logistic Regression
 
-        print("\n##### Logistic Regression #####\n")
+        results = ResultsLogger.get_logger("logistic_regression")
+        epochs = EpochLogger.get_logger("logistic_regression")
+        results.info("##### Logistic Regression #####")
 
         hp = [0.1, 0.3, 1.0]
         best_hp = 0
@@ -97,6 +99,9 @@ class App:
                 val_model.fit(X_train, Y_train)
                 prediction = val_model.predict(X_val)
                 val_accuracy = np.mean(prediction == Y_val)
+                epochs.info(
+                    "C=%s, penalty=%s: val_accuracy=%.4f", C, penalty, val_accuracy
+                )
                 if val_accuracy > best_acc:
                     best_hp = C
                     best_acc = val_accuracy
@@ -110,19 +115,18 @@ class App:
             self.error = True
             return False
 
-        print(f"Best C: {best_hp}" if best_penalty else "No C Used")
-        print("Ridge regression type used: ", best_penalty)
-        print("Best Val Acc: ", best_acc)
+        results.info(f"Best C: {best_hp}" if best_penalty else "No C Used")
+        results.info("Ridge regression type used: %s", best_penalty)
+        results.info("Best Val Acc: %s", best_acc)
 
         test_predictions = model.predict(X_test)
-        print("Test Summary: ")
-        print(f"Accuracy: {accuracy_score(Y_test, test_predictions)}")
-        print(f"Classficiation: \n{classification_report(Y_test, test_predictions)}")
-        print(f"Confusion: \n{confusion_matrix(Y_test, test_predictions)}")
+        ResultsLogger.log_test_summary("logistic_regression", Y_test, test_predictions)
 
         # Decision Tree
 
-        print("\n##### Decision Tree #####\n")
+        results = ResultsLogger.get_logger("decision_tree")
+        epochs = EpochLogger.get_logger("decision_tree")
+        results.info("##### Decision Tree #####")
 
         hp = [0.1, 0.3, 1.0]
         best_mssp = 0
@@ -139,6 +143,12 @@ class App:
                 val_model.fit(X_train, Y_train)
                 prediction = val_model.predict(X_val)
                 val_accuracy = np.mean(prediction == Y_val)
+                epochs.info(
+                    "min_samples_split=%d, min_samples_leaf=%d: val_accuracy=%.4f",
+                    mssp_hp,
+                    msl_hp,
+                    val_accuracy,
+                )
                 if val_accuracy > best_acc:
                     best_mssp = mssp_hp
                     best_msl = msl_hp
@@ -152,19 +162,17 @@ class App:
             self.error = True
             return False
 
-        print(f"Best min sample split: {best_mssp}")
-        print("Best min samples leaf: ", best_msl)
-        print("Best Val Acc: ", best_acc)
+        results.info("Best min sample split: %s", best_mssp)
+        results.info("Best min samples leaf: %s", best_msl)
+        results.info("Best Val Acc: %s", best_acc)
 
         test_predictions = model.predict(X_test)
-        print("Test Summary: ")
-        print(f"Accuracy: {accuracy_score(Y_test, test_predictions)}")
-        print(f"Classficiation: \n{classification_report(Y_test, test_predictions)}")
-        print(f"Confusion: \n{confusion_matrix(Y_test, test_predictions)}")
+        ResultsLogger.log_test_summary("decision_tree", Y_test, test_predictions)
 
         ### Neural Network
 
-        print("\n##### Neural Network #####\n")
+        results = ResultsLogger.get_logger("neural_network")
+        results.info("##### Neural Network #####")
 
         Y_train = utils.to_categorical(Y_train, len(settings.GENRES))
         Y_val = utils.to_categorical(Y_val, len(settings.GENRES))
@@ -180,16 +188,22 @@ class App:
             seed=self.settings.seed,
         )
 
-        tuner.search(X_train, Y_train, epochs=500, validation_data=(X_val, Y_val))
+        tuner.search(
+            X_train,
+            Y_train,
+            epochs=500,
+            validation_data=(X_val, Y_val),
+            callbacks=[EpochLogger("neural_network")],
+        )
+        results.info(
+            "Best hyperparameters: %s", tuner.get_best_hyperparameters()[0].values
+        )
         model = tuner.get_best_models()[0]
-        model.summary()
+        model.summary(print_fn=results.info)
 
         Y_test = np.argmax(Y_test, axis=1)
         test_predictions = np.argmax(model.predict(X_test), axis=1)
-        print("Test Summary: ")
-        print(f"Accuracy: {accuracy_score(Y_test, test_predictions)}")
-        print(f"Classficiation: \n{classification_report(Y_test, test_predictions)}")
-        print(f"Confusion: \n{confusion_matrix(Y_test, test_predictions)}")
+        ResultsLogger.log_test_summary("neural_network", Y_test, test_predictions)
 
         return False
 
