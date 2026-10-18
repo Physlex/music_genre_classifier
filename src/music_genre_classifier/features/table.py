@@ -14,13 +14,13 @@ from scipy import stats
 from .generic import FeatureSet
 
 
-class FeatureTable(object):
+class FeatureTable:
     """
     Represents a columnal organization of feature sets. Combined with a feature set of
     more than one feature, this forms a table of input features.
     """
 
-    def __init__(self, featureset_list: ty.List[FeatureSet]):
+    def __init__(self, featureset_list: list[FeatureSet]):
         """
         Private default constructor. Should only ever be called by the `extract` class.
         """
@@ -35,7 +35,7 @@ class FeatureTable(object):
         Performs feature extraction on the dataset and returns a feature table instance.
         """
 
-        featureset_list: ty.List[FeatureSet] = []
+        featureset_list: list[FeatureSet] = []
         for genre_class, genre in enumerate(genres):
             print(f"Extracting features for {genre}")
             for snippet_idx in range(100):
@@ -193,4 +193,4 @@ class FeatureTable(object):
                 writer = csv.writer(file)
                 writer.writerow(featureset.to_list())
 
-    _featureset_list = ty.List[FeatureSet]
+    _featureset_list = list[FeatureSet]

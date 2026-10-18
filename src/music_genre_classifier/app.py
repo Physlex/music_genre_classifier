@@ -4,14 +4,12 @@ This module trains and evaluates the genre classifiers on the extracted feature 
 
 import csv
 import typing as ty
-from pathlib import Path
 
 import keras_tuner as kt
 import numpy as np
 from keras import layers, metrics, models, optimizers, utils
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (accuracy_score, classification_report,
-                             confusion_matrix)
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
@@ -38,7 +36,7 @@ def build_model(hp):
     return model
 
 
-class App(object):
+class App:
     """
     Class wrapper for the application. Seperates initialization, state, and other logical
     features from the entry point.
@@ -187,7 +185,7 @@ class App(object):
         Prep the application as an initial update step to ensure efficient running.
         """
 
-        asset_root = Path.cwd() / Path(settings.ROOT) / Path(settings.ASSET_ROOT)
+        asset_root = settings.ASSET_ROOT
         self.context["asset-root"] = asset_root
 
         if settings.EXTRACT_FEATURES:
@@ -202,7 +200,7 @@ class App(object):
             # Serialize the features to a set of csv's (to increase speed on second-training attempts)
             table.serialize(to=asset_root, classes=settings.GENRES)
 
-    def _split_features(self) -> ty.Optional[ty.Union[ty.Union[ty.Iterable]]]:
+    def _split_features(self) -> ty.Iterable | None:
         """
         Splits features into testing, validation, and training sets. Feature selection is
         randomized and augmented as necessary during this process.
@@ -217,7 +215,7 @@ class App(object):
         # Convert all features (in seperate files) into one big dataset
         dataset = []
         for genre in settings.GENRES:
-            with open(asset_root / "features" / f"{genre}.csv", "r") as file:
+            with open(asset_root / "features" / f"{genre}.csv") as file:
                 reader = csv.reader(file)
                 table = [[np.float64(value) for value in row] for row in reader]
                 for row in table:
@@ -255,6 +253,6 @@ class App(object):
 
         return ((X_train, Y_train), (X_val, Y_val), (X_test, Y_test))
 
-    error_encountered: ty.Union[str, None]
+    error_encountered: str | None
     error: bool
-    context: ty.Dict[str, ty.Any]
+    context: dict[str, ty.Any]

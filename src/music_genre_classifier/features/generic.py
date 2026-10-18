@@ -5,7 +5,7 @@ Generic Feature module. Allows declaring custom FeatureSet types with a simple w
 import typing as ty
 
 
-class FeatureSet(object):
+class FeatureSet:
     """
     Generic FeatureSetet class. Represents a row in a table of FeatureSet.
     """
@@ -33,7 +33,7 @@ class FeatureSet(object):
 
         pass
 
-    def to_list(self) -> ty.List[ty.Any]:
+    def to_list(self) -> list[ty.Any]:
         """
         Converts the labeled feature set into a simple-row representation. Useful for
         working with training data.

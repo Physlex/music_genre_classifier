@@ -3,11 +3,10 @@ This module provides the settings, configuration, and other interpreter-time att
 run the application.
 """
 
-# Root of the application structure, where all the src code is actually held.
-ROOT = "src"
+from pathlib import Path
 
-# Folder where static assets are held. All datasets are taken from here.
-ASSET_ROOT = "public"
+# Folder where static assets are held, next to this module. All datasets are taken from here.
+ASSET_ROOT = Path(__file__).parent / "public"
 
 # Forces the program to re-serialize the feature set. Set to 'False' if features have
 # already been serialized.
