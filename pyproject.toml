@@ -1,17 +1,39 @@
 [build-system]
-requires = ["setuptools >= 61.2"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
 
 [project]
-name = "music-models"
-version = "0.1.0"
-dynamic = ["dependencies"]
+name = "music-genre-classifier"
+version = "0.2.0"
+description = "Ten-genre music classification on GTZAN using handcrafted spectral, timbral, and rhythmic features"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Alexander Williams-Letondre", email = "al.willet02@gmail.com" }]
+requires-python = ">=3.12"
+dependencies = [
+    "keras>=3.7",
+    "keras-tuner>=1.4.7",
+    "librosa>=0.11",
+    "numpy>=2.0",
+    "scikit-learn>=1.6",
+    "scipy>=1.14",
+    # keras-tuner imports tensorboard for every trial but does not declare it
+    "tensorboard>=2.18",
+    "tensorflow-cpu>=2.18",
+]
 
-[tool.setuptools.packages.find]
-where=["src"]
+[project.scripts]
+mgc = "music_genre_classifier.__main__:main"
 
-[tool.setuptools.package-data]
-public = ["*"]
+[tool.basedpyright]
+include = ["src"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
 
-[tool.setuptools.dynamic]
-dependencies = {file=["requirements.txt"]}
+[tool.ruff]
+line-length = 90
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

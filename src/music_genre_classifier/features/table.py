@@ -11,17 +11,16 @@ import librosa as lr
 import numpy as np
 from scipy import stats
 
-from . import math_utils as mu
 from .generic import FeatureSet
 
 
-class FeatureTable(object):
+class FeatureTable:
     """
     Represents a columnal organization of feature sets. Combined with a feature set of
     more than one feature, this forms a table of input features.
     """
 
-    def __init__(self, featureset_list: ty.List[FeatureSet]):
+    def __init__(self, featureset_list: list[FeatureSet]):
         """
         Private default constructor. Should only ever be called by the `extract` class.
         """
@@ -36,7 +35,7 @@ class FeatureTable(object):
         Performs feature extraction on the dataset and returns a feature table instance.
         """
 
-        featureset_list: ty.List[FeatureSet] = []
+        featureset_list: list[FeatureSet] = []
         for genre_class, genre in enumerate(genres):
             print(f"Extracting features for {genre}")
             for snippet_idx in range(100):
@@ -48,13 +47,11 @@ class FeatureTable(object):
                 curr_pathname = assets_root_pathname
                 if snippet_idx < 10:
                     curr_pathname = (
-                        assets_root_pathname
-                        / f"genres/{genre}/{genre}.0000{snippet_idx}.au"
+                        assets_root_pathname / f"{genre}/{genre}.0000{snippet_idx}.au"
                     )
                 else:
                     curr_pathname = (
-                        assets_root_pathname
-                        / f"genres/{genre}/{genre}.000{snippet_idx}.au"
+                        assets_root_pathname / f"{genre}/{genre}.000{snippet_idx}.au"
                     )
 
                 audio_path = Path(curr_pathname)
@@ -72,7 +69,7 @@ class FeatureTable(object):
 
                 tempo_dynamic = lr.feature.tempo(y=y, sr=sr, aggregate=None, std_bpm=4)
 
-                # A simpler version of what is talked about in our paper
+                # Rhythm features from the beat-tracked onset times
                 _, beats_dynamic = lr.beat.beat_track(
                     y=y, sr=sr, units="time", trim=False, bpm=tempo_dynamic
                 )
@@ -172,13 +169,12 @@ class FeatureTable(object):
             return False
 
         root = Path(to)
-        if not root.exists():
-            print(f"Failed to find root asset directory: {to}")
+        root.mkdir(parents=True, exist_ok=True)
 
         # Flush any prior serializations, if they exist
         for featureset in self._featureset_list:
             with open(
-                root / "features" / f"{classes[featureset.genre_class]}.csv",
+                root / f"{classes[featureset.genre_class]}.csv",
                 mode="w",
                 newline="",
             ) as file:
@@ -187,11 +183,13 @@ class FeatureTable(object):
         # Write any features
         for featureset in self._featureset_list:
             with open(
-                root / "features" / f"{classes[featureset.genre_class]}.csv",
+                root / f"{classes[featureset.genre_class]}.csv",
                 mode="a",
                 newline="",
             ) as file:
                 writer = csv.writer(file)
                 writer.writerow(featureset.to_list())
 
-    _featureset_list = ty.List[FeatureSet]
+        return True
+
+    _featureset_list: list[FeatureSet]
