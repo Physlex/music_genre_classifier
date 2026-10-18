@@ -47,13 +47,11 @@ class FeatureTable:
                 curr_pathname = assets_root_pathname
                 if snippet_idx < 10:
                     curr_pathname = (
-                        assets_root_pathname
-                        / f"genres/{genre}/{genre}.0000{snippet_idx}.au"
+                        assets_root_pathname / f"{genre}/{genre}.0000{snippet_idx}.au"
                     )
                 else:
                     curr_pathname = (
-                        assets_root_pathname
-                        / f"genres/{genre}/{genre}.000{snippet_idx}.au"
+                        assets_root_pathname / f"{genre}/{genre}.000{snippet_idx}.au"
                     )
 
                 audio_path = Path(curr_pathname)
@@ -171,13 +169,12 @@ class FeatureTable:
             return False
 
         root = Path(to)
-        if not root.exists():
-            print(f"Failed to find root asset directory: {to}")
+        root.mkdir(parents=True, exist_ok=True)
 
         # Flush any prior serializations, if they exist
         for featureset in self._featureset_list:
             with open(
-                root / "features" / f"{classes[featureset.genre_class]}.csv",
+                root / f"{classes[featureset.genre_class]}.csv",
                 mode="w",
                 newline="",
             ) as file:
@@ -186,7 +183,7 @@ class FeatureTable:
         # Write any features
         for featureset in self._featureset_list:
             with open(
-                root / "features" / f"{classes[featureset.genre_class]}.csv",
+                root / f"{classes[featureset.genre_class]}.csv",
                 mode="a",
                 newline="",
             ) as file:
