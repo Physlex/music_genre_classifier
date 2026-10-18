@@ -4,9 +4,9 @@ Generic Feature module. Allows declaring custom FeatureSet types with a simple w
 
 import typing as ty
 
-from ..logging import SystemLogger
+from ..logging import setup_logging
 
-logger = SystemLogger.get_logger(__name__)
+logger = setup_logging(__name__)
 
 
 class FeatureSet:

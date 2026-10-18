@@ -3,16 +3,21 @@ This module defines the entry point to the application, run as `mgc` or `python 
 music_genre_classifier`.
 """
 
-from .app import App
-from .logging import SystemLogger
-from .logging import setup as setup_logging
+from .logging import init_logging, setup_logging
+from .settings import Settings
 
-logger = SystemLogger.get_logger(__name__)
+logger = setup_logging(__name__)
 
 
 def main() -> None:
-    app = App.from_settings()
-    setup_logging(app.settings)
+    settings = Settings.from_args()
+    init_logging(settings)
+
+    # Imported only once logging is initialized, so the output TensorFlow writes as it
+    # loads is caught by the log instance
+    from .app import App
+
+    app = App(settings)
 
     app.init()
     while app.run():

@@ -16,6 +16,7 @@ from sklearn.tree import DecisionTreeClassifier
 from . import settings
 from .features import FeatureTable
 from .logging import EpochLogger, ResultsLogger
+from .logging.callbacks import EpochCallback
 from .settings import Settings
 
 
@@ -193,7 +194,8 @@ class App:
             Y_train,
             epochs=500,
             validation_data=(X_val, Y_val),
-            callbacks=[EpochLogger("neural_network")],
+            callbacks=[EpochCallback("neural_network")],
+            verbose=1 if self.settings.stream else 0,
         )
         results.info(
             "Best hyperparameters: %s", tuner.get_best_hyperparameters()[0].values
@@ -202,7 +204,9 @@ class App:
         model.summary(print_fn=results.info)
 
         Y_test = np.argmax(Y_test, axis=1)
-        test_predictions = np.argmax(model.predict(X_test), axis=1)
+        test_predictions = np.argmax(
+            model.predict(X_test, verbose=1 if self.settings.stream else 0), axis=1
+        )
         ResultsLogger.log_test_summary("neural_network", Y_test, test_predictions)
 
         return False

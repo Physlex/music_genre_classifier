@@ -11,10 +11,10 @@ import librosa as lr
 import numpy as np
 from scipy import stats
 
-from ..logging import SystemLogger
+from ..logging import setup_logging
 from .generic import FeatureSet
 
-logger = SystemLogger.get_logger(__name__)
+logger = setup_logging(__name__)
 
 
 class FeatureTable:
